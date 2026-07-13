@@ -20,22 +20,24 @@ const EVENTS = [
   { title: 'Post Universidad', timeRange: ['16:00', '17:30'], day: 2, color: '#6edb6e', subColor: '#0f2e0f' },
   { title: 'Post Universidad', timeRange: ['16:00', '17:30'], day: 4, color: '#6edb6e', subColor: '#0f2e0f' },
   { title: 'Post Universidad', timeRange: ['14:00', '15:30'], day: 3, color: '#6edb6e', subColor: '#0f2e0f' },
-  { title: 'Tarea Universidad', timeRange: ['17:30', '19:30'], day: 1, color: '#020202', subColor: '#f5f4f5' },
-  { title: 'Tarea Universidad', timeRange: ['15:30', '17:30'], day: 3, color: '#020202', subColor: '#f5f4f5' },
-  { title: 'Bajo Electrico', timeRange: ['17:30', '19:30'], day: 0, color: '#fb5870', subColor: '#3a0d16' },
-  { title: 'Ciberseguridad', timeRange: ['17:30', '19:30'], day: 2, color: '#212339', subColor: '#a5e07a' },
-  { title: 'Ciberseguridad', timeRange: ['17:30', '19:30'], day: 3, color: '#212339', subColor: '#a5e07a' },
   { title: 'Youtube', timeRange: ['13:00', '17:00'], day: 5, color: '#280043', subColor: '#ff6fc7' },
   { title: 'Youtube', timeRange: ['14:00', '17:00'], day: 6, color: '#280043', subColor: '#ff6fc7' },
-  { title: 'Youtube', timeRange: ['19:30', '21:30'], day: 4, color: '#280043', subColor: '#ff6fc7' },
-  { title: 'Ejercicio + Dormir', timeRange: ['19:30', '24:00'], day: 0, color: '#1c1c1c', subColor: '#c9c9c9' },
-  { title: 'Ejercicio + Dormir', timeRange: ['19:30', '24:00'], day: 1, color: '#1c1c1c', subColor: '#c9c9c9' },
-  { title: 'Ejercicio + Dormir', timeRange: ['19:30', '24:00'], day: 2, color: '#1c1c1c', subColor: '#c9c9c9' },
-  { title: 'Ejercicio + Dormir', timeRange: ['19:30', '24:00'], day: 3, color: '#1c1c1c', subColor: '#c9c9c9' },
-  { title: 'Ejercicio + Dormir', timeRange: ['21:30', '24:00'], day: 4, color: '#1c1c1c', subColor: '#c9c9c9' },
-  { title: 'Bajo Electrico', timeRange: ['17:30', '19:30'], day: 4, color: '#fb5870', subColor: '#3a0d16' },
-  { title: 'Tarea Universidad', timeRange: ['17:00', '19:30'], day: 6, color: '#020202', subColor: '#f5f4f5' },
-  { title: 'Ejercicio + Dormir', timeRange: ['22:00', '24:00'], day: 6, color: '#1c1c1c', subColor: '#c9c9c9' },
+  { title: 'Tarea Universidad', timeRange: ['20:00', '22:00'], day: 0, color: '#020202', subColor: '#f5f4f5' },
+  { title: 'Tarea Universidad', timeRange: ['17:30', '19:30'], day: 2, color: '#020202', subColor: '#f5f4f5' },
+  { title: 'Tarea Universidad', timeRange: ['22:00', '24:00'], day: 4, color: '#020202', subColor: '#f5f4f5' },
+  { title: 'Tarea Universidad', timeRange: ['17:30', '19:30'], day: 6, color: '#020202', subColor: '#f5f4f5' },
+  { title: 'Tarea Universidad', timeRange: ['22:00', '24:00'], day: 1, color: '#020202', subColor: '#f5f4f5' },
+  { title: 'Tarea Universidad', timeRange: ['20:00', '22:00'], day: 3, color: '#020202', subColor: '#f5f4f5' },
+  { title: 'Ejercicio + Dormir', timeRange: ['22:00', '24:00'], day: 0, color: '#1c1c1c', subColor: '#d9d9d9' },
+  { title: 'Ejercicio + Dormir', timeRange: ['19:30', '24:00'], day: 2, color: '#1c1c1c', subColor: '#d9d9d9' },
+  { title: 'Ejercicio + Dormir', timeRange: ['22:00', '24:00'], day: 3, color: '#1c1c1c', subColor: '#d9d9d9' },
+  { title: 'Ejercicio + Dormir', timeRange: ['20:00', '24:00'], day: 5, color: '#1c1c1c', subColor: '#d9d9d9' },
+  { title: 'Ejercicio + Dormir', timeRange: ['21:00', '24:00'], day: 6, color: '#1c1c1c', subColor: '#d9d9d9' },
+  { title: 'Ciberseguridad', timeRange: ['17:30', '22:00'], day: 1, color: '#313896', subColor: '#0fd0f7' },
+  { title: 'Ciberseguridad', timeRange: ['15:30', '20:00'], day: 3, color: '#313896', subColor: '#0fd0f7' },
+  { title: 'Ciberseguridad', timeRange: ['17:00', '20:00'], day: 5, color: '#313896', subColor: '#0fd0f7' },
+  { title: 'Bajo Electrico', timeRange: ['17:30', '20:00'], day: 0, color: '#100e0e', subColor: '#fe6a56' },
+  { title: 'Bajo Electrico', timeRange: ['17:30', '20:00'], day: 4, color: '#100e0e', subColor: '#fe6a56' },
 ]
 
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR)
@@ -58,6 +60,45 @@ function useNow() {
 function isActive(ev, nowDay, nowMin) {
   if (ev.day !== nowDay) return false
   return toMin(ev.timeRange[0]) <= nowMin && nowMin < toMin(ev.timeRange[1])
+}
+
+// Agrupa eventos del mismo dia que se traslapan en el tiempo y les asigna
+// columna + total de columnas, para poder dibujarlos lado a lado.
+function layoutDay(dayEvents) {
+  const sorted = [...dayEvents].sort((a, b) => toMin(a.timeRange[0]) - toMin(b.timeRange[0]))
+  const clusters = []
+
+  sorted.forEach((ev) => {
+    const evStart = toMin(ev.timeRange[0])
+    const evEnd = toMin(ev.timeRange[1])
+    let cluster = clusters.find((c) => c.end > evStart)
+    if (!cluster) {
+      cluster = { end: evEnd, items: [] }
+      clusters.push(cluster)
+    }
+    cluster.end = Math.max(cluster.end, evEnd)
+    cluster.items.push(ev)
+  })
+
+  const result = []
+  clusters.forEach((cluster) => {
+    const columns = []
+    cluster.items.forEach((ev) => {
+      const evStart = toMin(ev.timeRange[0])
+      let colIndex = columns.findIndex((colEnd) => colEnd <= evStart)
+      if (colIndex === -1) {
+        colIndex = columns.length
+        columns.push(0)
+      }
+      columns[colIndex] = toMin(ev.timeRange[1])
+      result.push({ ev, col: colIndex })
+    })
+    result.forEach((r) => {
+      if (cluster.items.includes(r.ev)) r.totalCols = columns.length
+    })
+  })
+
+  return result
 }
 
 export default function App() {
@@ -120,43 +161,49 @@ export default function App() {
                   <div key={h} className="hour-mark">{String(h).padStart(2, '0')}:00</div>
               ))}
             </div>
-            {DAYS.map((d, dayIdx) => (
-                <div key={d} className={'day-col' + (dayIdx === nowDay ? ' today' : '')}>
-                  <div className="day-col-label">{d}</div>
-                  <div className="day-col-body">
-                    {HOURS.map((h) => (
-                        <div key={h} className="hour-line" />
-                    ))}
-                    {dayIdx === nowDay && nowLinePercent !== null && (
-                        <div className="now-line" style={{ top: `${nowLinePercent}%` }} />
-                    )}
-                    {EVENTS.filter((e) => e.day === dayIdx).map((ev, i) => {
-                      const start = toMin(ev.timeRange[0]) - START_HOUR * 60
-                      const end = toMin(ev.timeRange[1]) - START_HOUR * 60
-                      const top = (start / DAY_SPAN) * 100
-                      const height = ((end - start) / DAY_SPAN) * 100
-                      const active = isActive(ev, nowDay, nowMin)
-                      return (
-                          <div
-                              key={i}
-                              className={'block' + (active ? ' active' : '')}
-                              style={{
-                                top: `${top}%`,
-                                height: `${height}%`,
-                                background: ev.color,
-                                color: ev.subColor,
-                                borderColor: ev.subColor,
-                                animationDelay: `${i * 40}ms`,
-                              }}
-                          >
-                            <span className="block-title">{ev.title}</span>
-                            <span className="block-time">{ev.timeRange[0]}–{ev.timeRange[1]}</span>
-                          </div>
-                      )
-                    })}
+            {DAYS.map((d, dayIdx) => {
+              const layout = layoutDay(EVENTS.filter((e) => e.day === dayIdx))
+              return (
+                  <div key={d} className={'day-col' + (dayIdx === nowDay ? ' today' : '')}>
+                    <div className="day-col-label">{d}</div>
+                    <div className="day-col-body">
+                      {HOURS.map((h) => (
+                          <div key={h} className="hour-line" />
+                      ))}
+                      {dayIdx === nowDay && nowLinePercent !== null && (
+                          <div className="now-line" style={{ top: `${nowLinePercent}%` }} />
+                      )}
+                      {layout.map(({ ev, col, totalCols }, i) => {
+                        const start = toMin(ev.timeRange[0]) - START_HOUR * 60
+                        const end = toMin(ev.timeRange[1]) - START_HOUR * 60
+                        const top = (start / DAY_SPAN) * 100
+                        const height = ((end - start) / DAY_SPAN) * 100
+                        const active = isActive(ev, nowDay, nowMin)
+                        const widthPct = 100 / totalCols
+                        return (
+                            <div
+                                key={i}
+                                className={'block' + (active ? ' active' : '')}
+                                style={{
+                                  top: `${top}%`,
+                                  height: `${height}%`,
+                                  left: `calc(${col * widthPct}% + 3px)`,
+                                  width: `calc(${widthPct}% - 6px)`,
+                                  background: ev.color,
+                                  color: ev.subColor,
+                                  borderColor: ev.subColor,
+                                  animationDelay: `${i * 40}ms`,
+                                }}
+                            >
+                              <span className="block-title">{ev.title}</span>
+                              <span className="block-time">{ev.timeRange[0]}–{ev.timeRange[1]}</span>
+                            </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
