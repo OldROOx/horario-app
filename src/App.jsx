@@ -48,6 +48,16 @@ const toMin = (t) => {
   return (h === 0 ? 24 : h) * 60 + m
 }
 
+// Convierte "HH:MM" (24h) a formato de 12 horas con am/pm, p.ej. "17:30" -> "5:30 pm"
+function to12h(t) {
+  const [hRaw, m] = t.split(':').map(Number)
+  const h = hRaw === 24 ? 0 : hRaw
+  const period = h >= 12 ? 'pm' : 'am'
+  let h12 = h % 12
+  if (h12 === 0) h12 = 12
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`
+}
+
 function useNow() {
   const [now, setNow] = useState(new Date())
   useEffect(() => {
@@ -108,9 +118,9 @@ export default function App() {
   const [selectedDay, setSelectedDay] = useState(nowDay)
 
   const clockLabel = now.toLocaleTimeString('es-MX', {
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
-    hour12: false,
+    hour12: true,
   })
 
   const currentEvent = useMemo(
@@ -158,7 +168,7 @@ export default function App() {
           <div className="week-grid">
             <div className="hours-col">
               {HOURS.map((h) => (
-                  <div key={h} className="hour-mark">{String(h).padStart(2, '0')}:00</div>
+                  <div key={h} className="hour-mark">{to12h(`${String(h).padStart(2, '0')}:00`)}</div>
               ))}
             </div>
             {DAYS.map((d, dayIdx) => {
@@ -196,7 +206,7 @@ export default function App() {
                                 }}
                             >
                               <span className="block-title">{ev.title}</span>
-                              <span className="block-time">{ev.timeRange[0]}–{ev.timeRange[1]}</span>
+                              <span className="block-time">{to12h(ev.timeRange[0])}–{to12h(ev.timeRange[1])}</span>
                             </div>
                         )
                       })}
@@ -209,6 +219,23 @@ export default function App() {
 
         {/* Vista movil */}
         <div className="grid-mobile">
+          <div
+              className="now-badge now-badge-mobile"
+              style={
+                currentEvent
+                    ? { background: currentEvent.color, color: currentEvent.subColor, borderColor: currentEvent.subColor }
+                    : { background: '#15151c', color: '#a8a8c0', borderColor: '#2a2a35' }
+              }
+          >
+            {currentEvent ? (
+                <>
+                  <span className="now-dot" style={{ background: currentEvent.subColor }} />
+                  En este momento: {currentEvent.title}
+                </>
+            ) : (
+                'Sin actividad en este momento'
+            )}
+          </div>
           <div className="day-picker">
             {DAYS.map((d, i) => (
                 <button
@@ -232,7 +259,7 @@ export default function App() {
                   >
                     <div>
                       <div className="mobile-item-time" style={{ color: ev.subColor }}>
-                        {ev.timeRange[0]} – {ev.timeRange[1]}
+                        {to12h(ev.timeRange[0])} – {to12h(ev.timeRange[1])}
                       </div>
                       <div className="mobile-item-title" style={{ color: ev.subColor }}>
                         {ev.title}
